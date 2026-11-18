@@ -5,3 +5,14 @@ services:
     build: ./webhook-receiver
     environment: { PORT: "9000" }
     ports: ["${WEBHOOK_PORT:-9900}:9000"]  # host port: 9900 by default, override with WEBHOOK_PORT
+  contract-receiver:
+    profiles: ["contracts"]
+    build: ./contract-receiver
+    environment:
+      PORT: "9100"
+      HOST: "0.0.0.0"
+      RECEIVER_TOKEN: "${RECEIVER_TOKEN:-}"
+    ports: ["127.0.0.1:${CONTRACT_RECEIVER_PORT:-9910}:9100"]
+    volumes: ["contract-receiver-data:/data"]
+volumes:
+  contract-receiver-data:

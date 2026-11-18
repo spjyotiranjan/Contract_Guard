@@ -103,6 +103,8 @@ async function main() {
     await page.locator(`.react-flow__edge[aria-label="Inspect ${apiName} connection"]`).first().waitFor();
     await matchingEdge.dispatchEvent("click");
     await page.getByText("Structural match", { exact: true }).first().waitFor();
+    await page.getByText("CONTRACT VARIATIONS", { exact: false }).first().waitFor();
+    await page.getByText(/hypothetical (request|response) field-presence combinations/).first().waitFor();
     await page.getByRole("button", { name: "Close analysis" }).click();
     await panel.getByText(`${serviceName} connections`, { exact: true }).waitFor();
     await page.getByRole("button", { name: `${serviceName} → claims-api` }).click();

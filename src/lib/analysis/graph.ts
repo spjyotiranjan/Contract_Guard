@@ -2,6 +2,7 @@ import type { Db } from "mongodb";
 import { COLLECTIONS } from "../registry/schema";
 import type { ApiVersion, RegistryEntry, ServiceVersion } from "../registry/types";
 import { analyzeUses } from "./analyze";
+import { analyzeVariations } from "./variations";
 import type { RegistryGraph } from "./types";
 
 export function analyzeDefinition(serviceId: string, definition: ServiceVersion, apis: RegistryEntry[], versions: ApiVersion[]): RegistryGraph["connections"] {
@@ -15,7 +16,7 @@ export function analyzeDefinition(serviceId: string, definition: ServiceVersion,
     const api = apiByName.get(provider);
     const apiId = api?._id.toHexString();
     return { serviceId, definitionId: definition._id.toHexString(), provider, apiId, useCount: uses.length,
-      versions: apiId ? versions.filter((version) => version.apiId.toHexString() === apiId).map((version) => ({ versionId: version._id.toHexString(), version: version.version, sourceFile: version.sourceFile, ...analyzeUses(version.definition, uses) })) : [],
+      versions: apiId ? versions.filter((version) => version.apiId.toHexString() === apiId).map((version) => ({ versionId: version._id.toHexString(), version: version.version, sourceFile: version.sourceFile, ...analyzeUses(version.definition, uses), variations: analyzeVariations(version.definition, uses) })) : [],
     };
   });
 }

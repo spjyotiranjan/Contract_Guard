@@ -73,9 +73,23 @@ export function validateService(definition: JsonObject, name: string): ServiceDe
     throw new RegistryError(400, "Service YAML must contain consumer, team, and a uses array.");
   }
   if (definition.consumer !== name) throw new RegistryError(400, "YAML consumer must match the service name.");
-  for (const use of definition.uses) {
+  for (const [index, use] of definition.uses.entries()) {
     if (!object(use) || !nonEmpty(use.provider) || !nonEmpty(use.method) || !methods.has(use.method.toUpperCase()) || !nonEmpty(use.path) || !use.path.startsWith("/") || !Array.isArray(use.sends) || !use.sends.every(nonEmpty) || !Array.isArray(use.reads) || !use.reads.every(nonEmpty)) {
       throw new RegistryError(400, "Each use must contain a provider, valid HTTP method, path, sends array, and reads array.");
+    }
+    if (use.contract !== undefined) {
+      const contract = use.contract;
+      if (!object(contract) || contract.version !== 1 || Object.keys(contract).some((key) => !["version", "request", "responses"].includes(key))) throw new RegistryError(400, `uses[${index}].contract must be a version 1 contract.`);
+      function validateBody(value: unknown, location: string) {
+        if (!object(value) || !["required", "optional", "none"].includes(String(value.body)) || Object.keys(value).some((key) => !["body", "schema"].includes(key))) throw new RegistryError(400, `${location} must declare body as required, optional, or none.`);
+        if (value.body === "none" ? value.schema !== undefined : !object(value.schema)) throw new RegistryError(400, `${location} requires a schema unless body is none.`);
+      }
+      if (contract.request !== undefined) validateBody(contract.request, `uses[${index}].contract.request`);
+      if (contract.responses !== undefined) {
+        if (!object(contract.responses) || Object.keys(contract.responses).some((status) => !/^[1-5]\d\d$/.test(status))) throw new RegistryError(400, `uses[${index}].contract.responses must map explicit HTTP status codes to body contracts.`);
+        for (const [status, body] of Object.entries(contract.responses)) validateBody(body, `uses[${index}].contract.responses.${status}`);
+      }
+      if (contract.request === undefined && contract.responses === undefined) throw new RegistryError(400, `uses[${index}].contract must include request or responses.`);
     }
     use.method = use.method.toUpperCase();
   }

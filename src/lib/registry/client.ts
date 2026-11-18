@@ -18,6 +18,7 @@ export interface Definition {
   bindings?: unknown[];
   apiId?: string;
   serviceId?: string;
+  provisioning?: { status: "provisioned"; endpointCount: number; basePath: string } | { status: "failed" | "not_configured"; message: string };
 }
 
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {

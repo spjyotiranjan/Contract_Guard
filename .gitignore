@@ -1,5 +1,6 @@
 # Dependencies and build output
 node_modules/
+contract-guard-starter-kit/contract-receiver/data/
 .next/
 out/
 build/

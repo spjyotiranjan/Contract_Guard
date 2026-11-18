@@ -100,7 +100,7 @@ export function EntityDetail({ kind, id }: { kind: RegistryKind; id: string }) {
       setDefinitions((records) => [saved, ...records]); setExpanded(saved._id); setShowUpload(false); setVersion(""); setVersionState("idle"); setFile(null);
       uploadButtonRef.current?.focus();
       if (inputRef.current) inputRef.current.value = "";
-      setSuccess(isApi ? "API version uploaded successfully." : "Service definition uploaded successfully.");
+      setSuccess(isApi ? `API version uploaded successfully.${saved.provisioning?.status === "provisioned" ? ` ${saved.provisioning.endpointCount} simulated endpoints provisioned.` : saved.provisioning ? ` Receiver: ${saved.provisioning.message}` : ""}` : "Service definition uploaded successfully.");
     } catch (err) { setUploadError(err instanceof Error ? err.message : "Could not upload the file."); }
     finally { setUploading(false); }
   }

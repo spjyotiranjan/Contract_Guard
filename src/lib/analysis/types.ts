@@ -15,6 +15,23 @@ export interface VersionAnalysis {
   sourceFile?: string;
   status: AnalysisStatus;
   issues: AnalysisIssue[];
+  variations: VariationAnalysis;
+}
+
+export interface VariationCheck {
+  method: string;
+  path: string;
+  direction: "request" | "response";
+  status: AnalysisStatus;
+  coverage: "exhaustive" | "sampled" | "unavailable";
+  checked: number;
+  message: string;
+  responseStatus?: string;
+  example?: unknown;
+}
+export interface VariationAnalysis {
+  status: AnalysisStatus;
+  checks: VariationCheck[];
 }
 
 export interface GraphApi {

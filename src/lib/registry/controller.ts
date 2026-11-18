@@ -2,6 +2,8 @@ import { getMongoDb } from "../mongodb";
 import { RegistryError } from "./errors";
 import { validateCreateInput, validateId, validateUploadInput } from "./input";
 import { RegistryRepository, type Kind } from "./repository";
+import { provisionVersion } from "../receiver/provision";
+import type { ApiVersion } from "./types";
 
 function repository() { return new RegistryRepository(getMongoDb()); }
 
@@ -29,6 +31,8 @@ export const controller = {
   upload: (request: Request, kind: Kind, id: string) => respond(async () => {
     validateId(id);
     const { file, version } = await validateUploadInput(request, kind);
-    return repository().upload(kind, id, file, version);
+    const saved = await repository().upload(kind, id, file, version);
+    if (kind === "apis") return { ...saved, provisioning: await provisionVersion(saved as ApiVersion) };
+    return saved;
   }, 201),
 };

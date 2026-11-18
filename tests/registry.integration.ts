@@ -58,7 +58,7 @@ async function main() {
     await db.collection(COLLECTIONS.apiVersions).insertOne({ ...sameVersion, apiId: new ObjectId() });
     const legacy = client.db(`contract_guard_legacy_${randomUUID().replaceAll("-", "")}`);
     try {
-      await legacy.collection(COLLECTIONS.apiVersions).insertMany([sameVersion, { ...sameVersion, sourceHash: "d".repeat(64) }]);
+      await legacy.collection(COLLECTIONS.apiVersions).insertMany([{ ...sameVersion, _id: new ObjectId() }, { ...sameVersion, _id: new ObjectId(), sourceHash: "d".repeat(64) }]);
       await assert.rejects(initializeRegistry(legacy), /existing records share an API and version/);
       assert.equal(await legacy.collection(COLLECTIONS.apiVersions).countDocuments(), 2);
     } finally { await legacy.dropDatabase(); }

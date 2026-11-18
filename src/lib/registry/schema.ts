@@ -86,6 +86,7 @@ export const validators: Record<string, Document> = {
                   path: { bsonType: "string", pattern: "^/" },
                   sends: stringArray,
                   reads: stringArray,
+                  contract: { bsonType: "object", required: ["version"], properties: { version: { enum: [1] }, request: { bsonType: "object" }, responses: { bsonType: "object" } } },
                 },
               },
             },

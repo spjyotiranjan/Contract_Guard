@@ -98,6 +98,7 @@ async function main() {
   const matching = await request(`/api/services/${providerService.body.data._id}/definitions/${simpleService.body.data._id}/analysis`);
   assert.equal(matching.body.data[0].versions[0].versionId, simpleVersion.body.data._id);
   assert.equal(matching.body.data[0].versions[0].status, "match");
+  assert.equal(matching.body.data[0].versions[0].variations.status, "unknown");
   const badSpec = simpleSpec.replace("version: 1.0.0", "version: 2.0.0").replace("/ping:", "/other:");
   await request(`/api/apis/${registeredProvider.body.data._id}/versions`, upload(badSpec));
   const revised = await request(`/api/services/${providerService.body.data._id}/definitions/${simpleService.body.data._id}/analysis`);
@@ -113,6 +114,18 @@ async function main() {
   assert.equal(latestConnection.definitionId, newerService.body.data._id);
   assert.equal(latestConnection.provider, `missing-${suffix}`);
   assert.equal((await request(`/api/services/${providerService.body.data._id}/definitions/${simpleService.body.data._id}/analysis`)).body.data[0].provider, `provider-${suffix}`);
+  const variantName = `variant-${suffix}`;
+  const variantService = await request("/api/services", json({ name: variantName, owner: "Test" }));
+  const variantSpec = `openapi: 3.0.3\ninfo: {title: Test, version: 3.0.0}\npaths:\n  /variant:\n    post:\n      requestBody:\n        required: true\n        content:\n          application/json:\n            schema:\n              type: object\n              required: [flag]\n              additionalProperties: false\n              properties:\n                flag: {type: boolean}\n      responses:\n        '200':\n          description: ok\n          content:\n            application/json:\n              schema: {type: boolean}\n`;
+  assert.equal((await request(`/api/apis/${registeredProvider.body.data._id}/versions`, upload(variantSpec))).status, 201);
+  const variantYaml = `consumer: ${variantName}\nteam: Test\nuses:\n- provider: provider-${suffix}\n  method: POST\n  path: /variant\n  sends: [flag]\n  reads: []\n  contract:\n    version: 1\n    request:\n      body: required\n      schema:\n        type: object\n        properties:\n          flag: {type: boolean}\n        additionalProperties: false\n    responses:\n      '200':\n        body: optional\n        schema: {type: boolean}\n`;
+  const variantDefinition = await request(`/api/services/${variantService.body.data._id}/definitions`, upload(variantYaml));
+  assert.equal(variantDefinition.status, 201);
+  const variantAnalysis = await request(`/api/services/${variantService.body.data._id}/definitions/${variantDefinition.body.data._id}/analysis`);
+  const variantResult = variantAnalysis.body.data[0].versions.find((version: { version: string }) => version.version === "3.0.0").variations;
+  assert.equal(variantResult.status, "incompatible");
+  assert.deepEqual(variantResult.checks[0].example, {});
+  assert.equal((await request(`/api/services/${variantService.body.data._id}/definitions`, upload(variantYaml.replace("version: 1", "version: 2")))).status, 400);
   console.log("Registry HTTP checks passed.");
 }
 main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });

@@ -1,6 +1,6 @@
-# Contract Guard — Completed Phases
+# Contract Guard — Project Plan
 
-This document records the phases completed in this session and the scope of the current implementation. See [README.md](README.md) for setup, endpoints, and test commands.
+This document records completed and planned phases and the scope of the current implementation. See [README.md](README.md) for setup, endpoints, and test commands.
 
 ## 1. The Foundation — Complete
 
@@ -32,11 +32,61 @@ The registry overview presents service nodes and API boxes containing revisions.
 - Full OpenAPI validation, authentication, and runtime compatibility verification are not implemented.
 - Graph positions are temporary and reset on refresh; separate edge routes reduce overlap but may still cross.
 
-## 5. API Version Runtime Health Checks — Planned
+## 4.5. Service Request and Response Variations — Implemented (initial subset)
+
+The first implementation uses existing `sends` and `reads` to generate bounded hypothetical field-presence combinations; no additional service YAML is required. Because those lists do not establish optionality, values or correlations, the results remain warnings rather than confirmed incompatibilities. Optional v1 service body contracts enable stronger bounded finite enumeration and representative samples. Results are separate in the graph and service analysis API. Supported schemas, limits, and examples are documented in the README. This is contract-only analysis, not runtime verification. Conditional composition, richer media and parameter handling, larger exhaustive domains, and implementation-level verification remain future work.
+
+### Goal and limitations
+
+Add a separate contract-variation check alongside the existing structural service-to-API analysis. For each service definition and API revision, compare the request variations the service may send and the response variations it can handle with the API's OpenAPI definition. Never present a finite collection of sampled cases as proof of compatibility across an infinite or unexplored space. Results concern declared contracts, not deployed behavior.
+
+The existing consumer YAML only names fields in `sends` and `reads`; it does not specify possible values, presence, types, correlations, or expected responses. Preserve legacy YAML unchanged and report hypothetical presence cases as **Warning** rather than asserting these assumptions are real. Existing structural results remain separately visible.
+
+### Consumer contract extension
+
+1. Add an optional versioned extension on each `uses` entry for consumer request and response contracts, specifying method and path via the existing fields. Define and document the exact syntax and a restricted supported schema dialect before implementation. Continue accepting existing definitions and preserving additional fields.
+2. Request contracts must describe JSON bodies including whether the body is present or optional, explicit required and optional properties, types, nullability, enum and numeric constraints, nested objects and arrays, and additional-property policy. Represent meaningful alternatives and conditional relationships only where the chosen supported dialect can evaluate them. Missing information must not be inferred from `sends`.
+3. Response contracts describe what the service can accept, including explicit status code and JSON media-type expectations, body presence, required fields, allowed values, and extra-field handling. A response is not a body sent by the service: the check must model responses the API may produce and the service can consume. An unspecified response capability is unknown, not unlimited.
+4. Clearly distinguish incomplete information from an unconstrained field. If source declarations are claimed to be exhaustive, state that this is an author-provided assumption, not proof of service behavior. Validate extensions on upload with useful field-level errors, add TypeScript types and MongoDB validation where appropriate, and avoid breaking persisted legacy documents. Document any database initialization requirements.
+
+### Comparison and generation
+
+1. Check in the correct direction: **service request domain ⊆ API accepted request domain**, and **API possible response domain ⊆ service accepted response domain**, for each applicable status and media type. For the first milestone focus on JSON request and response bodies; parameters, headers, auth, and request serialization remain explicitly unverified unless separately supported.
+2. Resolve local references safely, with cycle and depth limits. Select an OpenAPI-version-aware schema validator and define support for OpenAPI 3.0 versus 3.1 nullability, required fields, read/write-only properties, and `additionalProperties`. External or unresolved references, unsupported composition or conditions, ambiguous media types/statuses, and unsupported keywords must produce Warning, never a successful proof.
+3. For genuinely finite domains, enumerate all valid combinations, including optional fields, nested objects, enums, nullability, arrays and alternatives when bounded. Report expected and executed counts. Enforce configurable maximum case count, nesting, array size and runtime; if a limit is hit or finiteness cannot be established, mark coverage incomplete and result Warning unless a definite counterexample is found.
+4. For large or infinite domains use bounded representative generation (boundary values, absent/optional, null, enum and type cases), clearly marked **sampled**, not exhaustive. Use only cases allowed by the source contract; use valid baselines and shrink counterexamples when possible. Report generation seed, budget, coverage limitations and unsupported features. If no valid cases can be generated, report Warning, not success.
+5. Optionally add sound schema-containment checks for a clearly defined subset. Only report **contract compatible** when exhaustive enumeration or a sound containment check establishes it for the declared supported scope. Otherwise report Warning. Report **incompatible** only with a valid source-side counterexample that the target contract rejects, identifying endpoint, direction, status/media type, data path, reason and example.
+6. No actual API calls or mutations in this phase; evaluate against stored API definitions. The simulated receiver does not validate actual provider behavior. Keep all schema evaluation resource-bounded and safe for untrusted contracts.
+
+### Integration and UI
+
+- Extend the current on-demand analysis model and service-definition analysis endpoint with a distinct variation result per API revision and per operation, without silently changing the structural status or using diff output as compatibility evidence.
+- In the registry graph side panel show **Structural** and **Contract variations** separately, with compatible / incompatible / warning status, source assumptions, exhaustive versus sampled coverage, checked counts, and expandable actionable counterexamples. No case data should be sent to a real provider.
+- Keep the graph's current structural-match edge behavior explicit; variation success must not be inferred from an existing green edge. If any combined label is later introduced, show compatibility only when all required checks are established, and handle unknown independently from definite incompatibility.
+- Define behavior for older stored definitions, same-name legacy revisions, refreshes, multiple services, resource limits, and failures. Avoid logging sensitive values; contracts and generated examples should contain synthetic data only.
+
+### Verification and acceptance
+
+- Unit tests: request and response direction; required/optional and omitted bodies; nullable values; enums, numeric bounds, arrays, extra properties, correlated alternatives, path/status/media mismatches; local refs; OpenAPI 3.0/3.1 differences; unsupported and invalid schemas; and valid minimal counterexamples.
+- Coverage tests: finite complete enumeration, representative sampling, deterministic seeds, zero cases, over-budget/truncated generation, cycles and termination. Verify none can produce a false compatible result when coverage is incomplete.
+- Integration tests: upload old and extended service YAML, reload from MongoDB, analyze across multiple APIs and revisions, service ownership, endpoint errors, and backwards compatibility. Browser tests verify separate statuses and details for services and revisions.
+- Update README with schema examples, exact supported semantics, limits, API response changes, and the difference between contract compatibility and actual service/provider behavior. Run lint, typecheck, build and relevant unit, integration and UI suites.
+
+### Decisions to confirm
+
+- Where will service-side request/response contracts come from: manually authored YAML, generated from service code/tests, or another source? Existing `sends` / `reads` are insufficient for exhaustive variation generation.
+- What schema dialect and bounded case/time limits should the initial release support? Proposed first scope: JSON bodies, local refs and a documented conservative subset; mark everything else Warning.
+- Should cases be returned on demand only, or should generated results be stored? Proposed default: on demand, with summaries and bounded counterexamples.
+
+## 5. API Version Runtime Health Checks — Paused
 
 ### Goal
 
-Provision runnable endpoints for each API version in a webhook receiver, then check their availability on upload, every three minutes, and on demand. Show runtime health alongside, but separately from, the existing YAML-based service analysis. The current project has no receiver integration or scheduler.
+Provision runnable endpoints for each API version in a webhook receiver, then check their availability on upload, every three minutes, and on demand. Show runtime health alongside, but separately from, the existing YAML-based service analysis.
+
+**Implemented so far:** A separate authenticated contract receiver accepts YAML over WebSocket and provides persistent, isolated simulated endpoints. API uploads attempt provisioning; an endpoint can retry provisioning for existing versions. The original notification receiver is unchanged. See the README for configuration and supported path syntax.
+
+**Still planned:** Provisioning status persistence and bulk backfill, automatic and manual checks, scheduling, and health labels in the registry graph. Simulated endpoints only demonstrate receiver availability, not the health of a deployed API.
 
 ### Proposed flow
 
@@ -50,8 +100,5 @@ Provision runnable endpoints for each API version in a webhook receiver, then ch
 
 ### Decisions needed before implementation
 
-- Does a webhook receiver already exist? If so, where is it and what is its API contract? Otherwise, should it be built in this project or as a separate service?
-- Are receiver endpoints simulated from YAML or tied to deployed API versions? A simulated endpoint check verifies the receiver, not the real deployed API.
 - Should the receiver provide a non-mutating probe interface, or must checks invoke generated endpoints directly? Direct calls may require credentials, parameters, and bodies or cause side effects.
 - Where will Contract Guard run, and can it run a persistent worker or external scheduled job?
-- Can the receiver accept the stored JSON definition, or must the original YAML bytes be retained and sent?

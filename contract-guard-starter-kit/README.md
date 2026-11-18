@@ -13,6 +13,8 @@ This starts a **webhook receiver** at http://localhost:9900. It stands in for ch
 
 Everything else in the kit is plain files.
 
+An optional, separate simulated contract receiver is available in `contract-receiver/`. It does not replace or modify the notification webhook. Set `RECEIVER_TOKEN` to a secret of at least 16 characters and run `docker compose --profile contracts up --build`. The contract receiver listens on localhost port 9910 by default; configure the registry with its WebSocket URL and the same token. See the project root README for its protocol, routes, and limitations.
+
 ## API specifications: `specs/`
 
 Three provider services, each with four versions of its OpenAPI 3.0.3 specification, numbered in the order the owning team wants to publish them:
