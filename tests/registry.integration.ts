@@ -24,6 +24,7 @@ async function main() {
       apiIds.set(name, apiId);
       await db.collection(COLLECTIONS.apis).insertOne({ _id: apiId, name, owner: "test", createdAt: now, updatedAt: now });
       for (const file of await readdir(path.join("specs", name))) {
+        if (name === "claims-api" && file === "3-channel-and-notes-fixed.yaml") continue;
         const source = await readFile(path.join("specs", name, file));
         const definition = parse(source.toString("utf8"));
         await db.collection(COLLECTIONS.apiVersions).insertOne({
@@ -34,8 +35,8 @@ async function main() {
       }
     }
 
-    assert.equal(await db.collection(COLLECTIONS.apiVersions).countDocuments(), 12);
-    assert.equal(await db.collection(COLLECTIONS.apiVersions).countDocuments({ apiId: apiIds.get("claims-api"), version: "1.1.0" }), 2);
+    assert.equal(await db.collection(COLLECTIONS.apiVersions).countDocuments(), 11);
+    assert.equal(await db.collection(COLLECTIONS.apiVersions).countDocuments({ apiId: apiIds.get("claims-api"), version: "1.1.0" }), 1);
 
     for (const file of await readdir("consumers")) {
       const source = await readFile(path.join("consumers", file));
@@ -53,6 +54,14 @@ async function main() {
     const { _id: ignored, ...sameVersion } = apiVersion;
     assert.ok(ignored);
     await assert.rejects(db.collection(COLLECTIONS.apiVersions).insertOne(sameVersion), { code: 11000 });
+    await assert.rejects(db.collection(COLLECTIONS.apiVersions).insertOne({ ...sameVersion, sourceHash: "c".repeat(64) }), { code: 11000 });
+    await db.collection(COLLECTIONS.apiVersions).insertOne({ ...sameVersion, apiId: new ObjectId() });
+    const legacy = client.db(`contract_guard_legacy_${randomUUID().replaceAll("-", "")}`);
+    try {
+      await legacy.collection(COLLECTIONS.apiVersions).insertMany([sameVersion, { ...sameVersion, sourceHash: "d".repeat(64) }]);
+      await assert.rejects(initializeRegistry(legacy), /existing records share an API and version/);
+      assert.equal(await legacy.collection(COLLECTIONS.apiVersions).countDocuments(), 2);
+    } finally { await legacy.dropDatabase(); }
     await assert.rejects(db.collection(COLLECTIONS.apiVersions).insertOne({ ...sameVersion, version: "mismatch", sourceHash: "a".repeat(64) }), { code: 121 });
     await assert.rejects(db.collection(COLLECTIONS.services).insertOne({ name: "invalid", owner: "", createdAt: now, updatedAt: now }), { code: 121 });
     await assert.rejects(db.collection(COLLECTIONS.serviceVersions).insertOne({

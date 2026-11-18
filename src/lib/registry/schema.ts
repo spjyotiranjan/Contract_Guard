@@ -120,10 +120,14 @@ export async function initializeRegistry(db: Db): Promise<void> {
 
   await db.collection(COLLECTIONS.apis).createIndex({ name: 1 }, { unique: true });
   await db.collection(COLLECTIONS.services).createIndex({ name: 1 }, { unique: true });
-  await db.collection(COLLECTIONS.apiVersions).createIndex(
-    { apiId: 1, version: 1, sourceHash: 1 },
-    { unique: true },
-  );
+  try {
+    await db.collection(COLLECTIONS.apiVersions).createIndex({ apiId: 1, version: 1 }, { unique: true });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
+      throw new Error("Cannot enforce unique API versions: existing records share an API and version. Review and resolve duplicates before running db:init again.", { cause: error });
+    }
+    throw error;
+  }
   await db.collection(COLLECTIONS.serviceVersions).createIndex(
     { serviceId: 1, sourceHash: 1 },
     { unique: true },

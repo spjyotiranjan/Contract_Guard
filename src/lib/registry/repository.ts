@@ -60,14 +60,18 @@ export class RegistryRepository {
       if (kind === "apis") {
         const apiDefinition = validateApi(definition, version);
         const record: ApiVersion = { ...base, apiId: entry._id, version: apiDefinition.info.version, definition: apiDefinition };
-        await this.db.collection<ApiVersion>(COLLECTIONS.apiVersions).insertOne(record);
+        const versions = this.db.collection<ApiVersion>(COLLECTIONS.apiVersions);
+        if (await versions.findOne({ apiId: entry._id, version: record.version }, { projection: { _id: 1 } })) {
+          throw new RegistryError(409, "This API version already exists.");
+        }
+        await versions.insertOne(record);
         return record;
       }
       const record: ServiceVersion = { ...base, serviceId: entry._id, definition: validateService(definition, entry.name), bindings: [] };
       await this.db.collection<ServiceVersion>(COLLECTIONS.serviceVersions).insertOne(record);
       return record;
     } catch (error) {
-      if (error instanceof MongoServerError && error.code === 11000) throw new RegistryError(409, "This YAML has already been uploaded to this entity.");
+      if (error instanceof MongoServerError && error.code === 11000) throw new RegistryError(409, kind === "apis" ? "This API version already exists." : "This YAML has already been uploaded to this entity.");
       throw error;
     }
   }

@@ -37,7 +37,14 @@ async function main() {
   assert.equal(created.status, 201);
   assert.equal(created.body.data.definition.info.version, "1.0.0");
   assert.equal((await request(`/api/apis/${apiId}/versions`, upload(spec, "1.0.0"))).status, 409);
-  assert.equal((await request(`/api/apis/${apiId}/versions`)).body.data.length, 1);
+  const duplicate = await request(`/api/apis/${apiId}/versions`, upload(spec + "\n# changed source\n"));
+  assert.equal(duplicate.status, 409);
+  assert.equal(duplicate.body.error, "This API version already exists.");
+  assert.equal((await request(`/api/apis/${apiId}/versions`, upload(spec.replace("  version: 1.0.0\n", ""), "1.0.0"))).status, 409);
+  const concurrentSpec = spec.replace("version: 1.0.0", "version: 4.0.0");
+  const concurrent = await Promise.all([request(`/api/apis/${apiId}/versions`, upload(concurrentSpec)), request(`/api/apis/${apiId}/versions`, upload(concurrentSpec + "\n# different\n"))]);
+  assert.deepEqual(concurrent.map((result) => result.status).sort(), [201, 409]);
+  assert.equal((await request(`/api/apis/${apiId}/versions`)).body.data.length, 2);
   assert.equal((await request(`/api/apis/${apiId}/versions/${created.body.data._id}`)).status, 200);
   const noVersion = spec.replace("  version: 1.0.0\n", "");
   assert.equal((await request(`/api/apis/${apiId}/versions`, upload(noVersion))).status, 400);

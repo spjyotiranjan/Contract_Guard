@@ -8,13 +8,13 @@ Established the Next.js application, MongoDB-backed registry, and the API and se
 
 ## 2. API/Service YAML to JSON Parse and View — Complete
 
-API OpenAPI YAML and service consumer YAML can be uploaded, validated for their core structure, parsed into JSON-compatible documents, and stored as revisions. API versions come from `info.version` or an explicitly supplied version; service definitions are unversioned revisions. Original document fields and source metadata are retained.
+API OpenAPI YAML and service consumer YAML can be uploaded, validated for their core structure, parsed into JSON-compatible documents, and stored as revisions. API versions come from `info.version` or an explicitly supplied version and must be unique within the API; service definitions are unversioned revisions. Original document fields and source metadata are retained.
 
 The UI provides an expandable definition tree. For services, declared uses are also grouped by API provider, then by endpoint, with sent and read fields and additional details. The complete definition remains available.
 
 ## 3. API Version Diff Analysis Creation and Persistence — Complete within current scope
 
-The diff service compares any two distinct revisions of the same API and reports structural changes, categorized by parameters, request bodies, responses, schemas, components, paths, and other fields. Changes include before/after values when applicable and are capped at 5,000 with a truncation indicator. The API detail view connects adjacent revisions in upload order; selecting an edge opens a filterable comparison panel. Same-version revisions remain distinct by record ID.
+The diff service compares any two distinct revisions of the same API and reports structural changes, categorized by parameters, request bodies, responses, schemas, components, paths, and other fields. Changes include before/after values when applicable and are capped at 5,000 with a truncation indicator. The API detail view connects adjacent revisions in upload order; selecting an edge opens a filterable comparison panel. Legacy same-version revisions remain distinct by record ID.
 
 **Persistence distinction:** uploaded API revisions are persisted, but diff results are calculated on demand and are **not persisted** as separate records. The comparison is structural; it does not resolve `$ref` or determine whether changes are breaking.
 
