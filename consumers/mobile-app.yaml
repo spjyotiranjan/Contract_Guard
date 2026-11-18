@@ -1,0 +1,44 @@
+consumer: mobile-app
+team: Mobile
+uses:
+- provider: quote-api
+  method: POST
+  path: /quotes
+  sends:
+  - vehicle.make
+  - vehicle.cc
+  - rider.age
+  reads:
+  - quoteId
+  - status
+  - premium.total
+  - premium.breakdown[].label
+  - premium.breakdown[].amount
+- provider: quote-api
+  method: GET
+  path: /quotes/{id}
+  sends:
+  - id
+  reads:
+  - quoteId
+  - status
+  - premium.total
+- provider: claims-api
+  method: POST
+  path: /claims
+  sends:
+  - policyId
+  - incidentDate
+  - amountClaimed
+  reads:
+  - claimId
+  - status
+- provider: claims-api
+  method: GET
+  path: /claims/{claimId}
+  sends:
+  - claimId
+  reads:
+  - claimId
+  - status
+  - amountApproved

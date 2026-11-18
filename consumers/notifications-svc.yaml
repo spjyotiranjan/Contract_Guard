@@ -1,0 +1,28 @@
+consumer: notifications-svc
+team: Notifications
+uses:
+- provider: policy-api
+  method: GET
+  path: /policies/{policyId}
+  sends:
+  - policyId
+  reads:
+  - policyId
+  - status
+  - holder.email
+- provider: claims-api
+  method: GET
+  path: /claims/{claimId}
+  sends:
+  - claimId
+  reads:
+  - claimId
+  - status
+- provider: quote-api
+  method: GET
+  path: /quotes/{id}
+  sends:
+  - id
+  reads:
+  - quoteId
+  - status

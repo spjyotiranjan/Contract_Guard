@@ -1,0 +1,26 @@
+consumer: partner-portal
+team: Partner Integrations
+uses:
+- provider: quote-api
+  method: POST
+  path: /quotes
+  sends:
+  - vehicle.make
+  - vehicle.model
+  - vehicle.cc
+  - rider.age
+  - rider.city
+  reads:
+  - quoteId
+  - premium.total
+  - premium.currency
+- provider: policy-api
+  method: POST
+  path: /policies/{policyId}/endorsements
+  sends:
+  - policyId
+  - type
+  - details
+  reads:
+  - endorsementId
+  - status

@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  title: Claims API
+  version: 1.0.0
+  description: 'Insurance claims. Owner: Claims team.'
+paths:
+  /claims:
+    post:
+      operationId: submitClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimRequest'
+      responses:
+        '201':
+          description: Claim submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '400':
+          description: Invalid request
+  /claims/{claimId}:
+    get:
+      operationId: getClaim
+      parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claim'
+        '404':
+          description: Not found
+components:
+  schemas:
+    ClaimRequest:
+      type: object
+      required:
+      - policyId
+      - incidentDate
+      - amountClaimed
+      properties:
+        policyId:
+          type: string
+        incidentDate:
+          type: string
+          format: date
+        description:
+          type: string
+        amountClaimed:
+          type: integer
+    Claim:
+      type: object
+      required:
+      - claimId
+      - status
+      - amountApproved
+      properties:
+        claimId:
+          type: string
+        status:
+          type: string
+          enum:
+          - SUBMITTED
+          - IN_REVIEW
+          - APPROVED
+          - REJECTED
+        amountApproved:
+          type: integer
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimDocument'
+    ClaimDocument:
+      type: object
+      required:
+      - docId
+      - type
+      properties:
+        docId:
+          type: string
+        type:
+          type: string

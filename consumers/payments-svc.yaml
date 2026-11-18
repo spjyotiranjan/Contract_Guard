@@ -1,0 +1,14 @@
+consumer: payments-svc
+team: Payments
+uses:
+- provider: policy-api
+  method: GET
+  path: /policies/{policyId}
+  sends:
+  - policyId
+  reads:
+  - policyId
+  - status
+  - premiumDue.amount
+  - premiumDue.dueDate
+  - legacyCode

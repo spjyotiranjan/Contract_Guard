@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: Quote API
+  version: 1.1.0
+  description: 'Bike insurance quotes. Owner: Quotes team.'
+paths:
+  /quotes:
+    post:
+      operationId: createQuote
+      summary: Create a quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+      responses:
+        '201':
+          description: Quote created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '400':
+          description: Invalid request
+  /quotes/{quoteId}:
+    get:
+      operationId: getQuote
+      summary: Get a quote
+      parameters:
+      - name: quoteId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The quote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '404':
+          description: Not found
+  /internal/pricing-cache:
+    delete:
+      operationId: clearPricingCache
+      summary: Clear the pricing cache (Quotes team only)
+      x-internal: true
+      responses:
+        '204':
+          description: Cache cleared
+components:
+  schemas:
+    QuoteRequest:
+      type: object
+      required:
+      - vehicle
+      - rider
+      properties:
+        vehicle:
+          type: object
+          required:
+          - make
+          - cc
+          properties:
+            make:
+              type: string
+            model:
+              type: string
+            cc:
+              type: integer
+        rider:
+          type: object
+          required:
+          - age
+          properties:
+            age:
+              type: integer
+            city:
+              type: string
+    Quote:
+      type: object
+      required:
+      - quoteId
+      - status
+      - premium
+      properties:
+        quoteId:
+          type: string
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - FINAL
+        premium:
+          $ref: '#/components/schemas/PremiumDetails'
+        createdAt:
+          type: string
+          format: date-time
+    PremiumDetails:
+      type: object
+      required:
+      - total
+      - currency
+      - breakdown
+      properties:
+        total:
+          type: number
+        currency:
+          type: string
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceLine'
+    PriceLine:
+      type: object
+      required:
+      - label
+      - amount
+      properties:
+        label:
+          type: string
+        amount:
+          type: number
