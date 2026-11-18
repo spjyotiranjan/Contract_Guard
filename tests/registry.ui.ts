@@ -57,10 +57,17 @@ async function main() {
     await page.locator('input[type="file"]').setInputFiles({ name: "service.yaml", mimeType: "application/yaml", buffer: Buffer.from(serviceYaml) });
     await page.getByRole("dialog").getByRole("button", { name: "Upload YAML" }).click();
     await page.getByText("Service definition uploaded successfully.").waitFor();
+    const providers = page.locator(".provider-group");
+    assert.equal(await providers.count(), 2);
+    const quotes = providers.filter({ hasText: "quote-api" });
+    const claims = providers.filter({ hasText: "claims-api" });
+    assert.equal(await quotes.locator(".endpoint-use").count(), 2);
+    assert.equal(await claims.locator(".endpoint-use").count(), 2);
+    await quotes.locator(".endpoint-use").filter({ hasText: "POST" }).locator("summary").click();
+    await quotes.getByText("vehicle.make").waitFor();
+    await quotes.getByText("premium.breakdown[].amount").waitFor();
+    await page.getByText("COMPLETE DEFINITION").click();
     await page.getByRole("cell", { name: serviceName }).waitFor();
-    await page.getByRole("button", { name: "Expand uses" }).click();
-    await page.getByRole("button", { name: "Expand [0]" }).click();
-    await page.getByRole("cell", { name: "quote-api" }).waitFor();
 
     await page.getByRole("link", { name: "Back to registry" }).click();
     await page.getByLabel("Search by name or owner").fill(serviceName);
