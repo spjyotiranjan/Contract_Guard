@@ -1,0 +1,7 @@
+# Contract Guard starter kit: a webhook receiver (the specs and consumer files are plain files in this folder).
+# Start:  docker compose up --build     (Podman: podman compose up --build)
+services:
+  webhook-receiver:
+    build: ./webhook-receiver
+    environment: { PORT: "9000" }
+    ports: ["${WEBHOOK_PORT:-9900}:9000"]  # host port: 9900 by default, override with WEBHOOK_PORT

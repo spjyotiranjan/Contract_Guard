@@ -31,3 +31,27 @@ The registry overview presents service nodes and API boxes containing revisions.
 - Persisted diff records, explicit service-to-version binding management, and actual deployed-version tracking are not implemented.
 - Full OpenAPI validation, authentication, and runtime compatibility verification are not implemented.
 - Graph positions are temporary and reset on refresh; separate edge routes reduce overlap but may still cross.
+
+## 5. API Version Runtime Health Checks — Planned
+
+### Goal
+
+Provision runnable endpoints for each API version in a webhook receiver, then check their availability on upload, every three minutes, and on demand. Show runtime health alongside, but separately from, the existing YAML-based service analysis. The current project has no receiver integration or scheduler.
+
+### Proposed flow
+
+1. **Upload and provision:** Validate and store the API version, run the existing structural analysis, and send its definition to the receiver using the API and version record IDs. Track provisioning as pending, successful, or failed, then run an initial check after successful provisioning. Keep the uploaded version if the receiver is unavailable and allow provisioning to be retried.
+2. **Existing versions:** Provide an idempotent backfill operation to register existing versions independently by record ID. Skip successful registrations unless explicitly retried, and report failures without stopping the entire backfill.
+3. **Runtime checks:** Check provisioned versions every three minutes and provide a manual check action. Prevent overlapping checks for a version. Store the latest result, check time, endpoint-level details, and errors. Mark results stale when checks stop running; distinguish pending, not checked, provisioning failure, check failure, partial health, and healthy states.
+4. **Graph and details:** Show separate YAML analysis and runtime health labels and details for each service-to-version connection. Provide manual check and provisioning retry controls, and refresh health status without a full page reload. A reachable receiver endpoint must not be presented as proof of service compatibility or real API health.
+5. **Persistence and APIs:** Persist provisioning and health records keyed by API version ID. Add endpoints for provisioning, backfill, manual checks, and results. Include stored health summaries in graph responses without live network calls during graph loading.
+6. **Scheduling and security:** Use a reliable background worker or external scheduled job rather than a timer in a Next.js request handler. Add timeouts, bounded concurrency, retries, and coordination across app instances. Define receiver authentication, idempotency, and a restricted receiver address to prevent arbitrary outbound requests.
+7. **Verification:** Test provisioning, retries, backfill, scheduled and manual checks, receiver downtime, partial failures, stale results, duplicate job prevention, and graph presentation using a controlled test receiver.
+
+### Decisions needed before implementation
+
+- Does a webhook receiver already exist? If so, where is it and what is its API contract? Otherwise, should it be built in this project or as a separate service?
+- Are receiver endpoints simulated from YAML or tied to deployed API versions? A simulated endpoint check verifies the receiver, not the real deployed API.
+- Should the receiver provide a non-mutating probe interface, or must checks invoke generated endpoints directly? Direct calls may require credentials, parameters, and bodies or cause side effects.
+- Where will Contract Guard run, and can it run a persistent worker or external scheduled job?
+- Can the receiver accept the stored JSON definition, or must the original YAML bytes be retained and sent?
