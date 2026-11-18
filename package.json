@@ -14,11 +14,13 @@
     "test:registry:http": "tsx tests/registry.http.ts",
     "test:registry:ui": "tsx tests/registry.ui.ts",
     "test:diff": "tsx tests/diff.test.ts",
+    "test:analysis": "tsx tests/analysis.test.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@next/env": "^16.4.6",
+    "@xyflow/react": "^13.0.2",
     "lucide-react": "^1.75.0",
     "mongodb": "^7.9.0",
     "next": "^16.4.6",

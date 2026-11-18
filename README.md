@@ -47,6 +47,8 @@ Responses use `{ "data": ... }` on success and `{ "error": "..." }` on failure. 
 | GET | `/api/apis/{id}/diff?from={versionId}&to={versionId}` | Compare any two distinct revisions belonging to the API, from old to new. |
 | GET, POST | `/api/services/{id}/definitions` | List definitions, or upload multipart `file` (no version). |
 | GET | `/api/services/{id}/definitions/{definitionId}` | Get one service definition. |
+| GET | `/api/services/{id}/definitions/{definitionId}/analysis` | Analyze a specific service definition against registered API revisions. |
+| GET | `/api/registry/graph` | Return registry nodes and analysis for the latest uploaded definition of each service. |
 
 Examples (replace IDs with the `_id` from each response):
 
@@ -67,6 +69,12 @@ The response contains `from`, `to`, `changes`, and `truncated`. Each change has 
 
 This is a structural comparison, not a compatibility assessment: it does not resolve `$ref`, interpret inheritance, identify breaking changes, or match renamed endpoints. A reference change is reported literally, and changes to a referenced component are reported under that component rather than repeated at every use.
 
+## Service dependency analysis
+
+The overview graph uses the most recently uploaded service definition (timestamp, then record ID as a tie-breaker). Each provider name is matched exactly to a registered API name. Green connections end at API revisions that pass supported structural checks; dashed connections represent a declared dependency without a structural match. Drag nodes to rearrange them, pan or zoom the canvas, and select a service to highlight its connections. Positions are temporary and reset on refresh. Separate connection ports and routes reduce overlap, though lines can still cross. Select an edge or a connection in the side panel to see all revision results and reasons. Unregistered providers and APIs without revisions are shown separately. Historical service definitions can be analyzed via the definition-specific endpoint. Analysis is computed on demand, is not persisted, and does not create actual service-to-version bindings.
+
+The analysis compares exact method and path strings, declared parameters and required parameters, JSON request fields and required request properties, and fields in each explicitly declared successful JSON response. It follows local `$ref` references, handles nested properties and `[]` field paths, and checks whether response fields are marked required. Revisions are identified by record ID even when version labels are identical. It reports `match`, `incompatible`, or `unknown` with issue codes and explanations. Unresolved references, unsupported composition, optional response fields, authentication, ambiguous media types, and other unverifiable constructs result in `unknown` unless a definite incompatibility is also found. If any endpoint is incompatible, the provider revision is incompatible overall. `match` means only that supported structural checks passed; it **does not guarantee safety or runtime compatibility**. Consumer YAML does not specify value types, enum values, authentication credentials, response status expectations, deployment configuration, or actual version usage. These are not validated. Paths with renamed parameters are not treated as equivalent. Response checking is conservative across all declared 2xx statuses.
+
 ## Checks
 
 - `npm run lint`
@@ -76,7 +84,8 @@ This is a structural comparison, not a compatibility assessment: it does not res
 - `npm run test:registry:http` with `TEST_BASE_URL` pointing to a running app connected to an isolated test database. This test writes records to that database and does not remove them.
 - `npm run test:registry:ui` with `TEST_BASE_URL` pointing to a running app connected to an isolated test database. This browser test writes records and does not remove them. Install Playwright Chromium (`npx playwright install chromium`) or set `TEST_BROWSER_PATH` to an existing Chromium executable.
 - `npm run test:diff` tests the structural comparison, including sample OpenAPI files.
+- `npm run test:analysis` tests service compatibility analysis against sample and synthetic contracts.
 
 ## Scope
 
-The registry UI supports listing, creating and viewing entities, uploading YAML, and inspecting parsed definitions in an expandable hierarchical table. Authentication, API-version binding management, and full OpenAPI validation are not implemented yet.
+The registry UI supports listing, creating and viewing entities, uploading YAML, inspecting parsed definitions, and viewing derived service/API connections. Authentication, explicit API-version binding management, and full OpenAPI validation are not implemented yet.

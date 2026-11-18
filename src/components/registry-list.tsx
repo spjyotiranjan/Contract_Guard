@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownUp, ArrowRight, Box, Braces, CircleHelp, Layers3, Plus, Search, Server, X } from "lucide-react";
 import { apiRequest, formatDate, type Entry, type RegistryKind } from "@/lib/registry/client";
+import { RegistryGraphView } from "./registry-graph";
 
 type Filter = "all" | RegistryKind;
 type Row = Entry & { kind: RegistryKind };
@@ -40,6 +41,7 @@ export function RegistryList() {
         <div className="overview-card"><div className="overview-icon icon-orange"><Server size={19} /></div><div><div className="overview-label">SERVICES</div><div className="overview-number">{loading || error ? "—" : serviceCount.toString().padStart(2, "0")}</div></div><span className="overview-note">Registered consumers</span></div>
       </section>
 
+      <RegistryGraphView />
       <section className="registry-section">
         <div className="section-heading"><div><div className="eyebrow muted-eyebrow">YOUR WORKSPACE</div><h2>Explore registry <span className="count-badge">{loading || error ? "—" : rows.length}</span></h2><p>Browse and manage everything in your workspace.</p></div><div className="section-decoration"><span /><span /><span /><span /><span /></div></div>
         <div className="table-card">
